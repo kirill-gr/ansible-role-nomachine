@@ -1,0 +1,5 @@
+= Ansible role: Install Nomachine
+
+Designed for Ubuntu, tested on all versions from 18.04 to 19.10
+
+The approach is kind of hacky, so make sure to read the role to understand what happens.

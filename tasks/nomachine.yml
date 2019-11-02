@@ -1,0 +1,36 @@
+---
+
+- name: Check NoMachine version
+  command: apt list --installed
+  register: apt_installed
+
+- set_fact:
+    current_version: "{{ apt_installed.stdout_lines | select('match', 'nomachine') | first | regex_replace('\\D+(\\d+\\.\\d+\\.\\d+)\\-.*', '\\1') }}"
+
+- name: Check latest NoMachine version in RSS
+  uri:
+    url: https://www.nomachine.com/?q=all-news-software-updates/rss.xml
+    method: GET
+    return_content: yes
+  register: latest_version
+
+- xml:
+    xmlstring: "{{ latest_version.content }}"
+    xpath: /rss/channel/item[1]/title
+    content: text
+  register: title
+
+- set_fact:
+    latest_version: "{{ title.matches.0.title | regex_replace('\\D+(\\d+\\.\\d+\\.\\d+).*', '\\1') }}"
+
+- set_fact:
+    update_possible: "{{ current_version is version(latest_version, '<') }}"
+
+- set_fact:
+    latest_version_short: "{{ latest_version | regex_replace('(\\d+\\.\\d+)\\.\\d+', '\\1') }}"
+  when: update_possible
+
+- name: Install NoMachine
+  apt:
+    deb: https://download.nomachine.com/download/{{ latest_version_short }}/Linux/nomachine_{{ latest_version }}_1_amd64.deb
+  when: update_possible
